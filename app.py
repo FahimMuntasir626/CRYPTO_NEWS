@@ -1,4 +1,5 @@
 import os
+import re
 import time
 import hashlib
 import requests
@@ -87,6 +88,9 @@ def fetch_rss_feed(feed_key, feed_info):
         return news_cache[cache_key]
     
     try:
+        # Add User-Agent to prevent RSS feeds from blocking requests
+        if hasattr(feedparser, 'USER_AGENT'):
+            feedparser.USER_AGENT = "CryptoRadar/1.0 +https://cryptoradar.onrender.com"
         feed = feedparser.parse(feed_info["url"])
         articles = []
         for entry in feed.entries[:15]:
@@ -99,7 +103,6 @@ def fetch_rss_feed(feed_key, feed_info):
             # Get summary/description
             summary = getattr(entry, 'summary', '') or getattr(entry, 'description', '')
             # Strip HTML tags
-            import re
             summary = re.sub(r'<[^>]+>', '', summary)
             if len(summary) > 200:
                 summary = summary[:200] + "..."
@@ -124,6 +127,14 @@ def fetch_rss_feed(feed_key, feed_info):
             # Generate unique ID
             article_id = hashlib.md5(entry.link.encode()).hexdigest()[:8]
             
+            # Convert time.struct_time to timestamp for JSON serialization
+            pub_timestamp = 0
+            if published:
+                try:
+                    pub_timestamp = time.mktime(published)
+                except Exception:
+                    pub_timestamp = 0
+            
             articles.append({
                 "id": article_id,
                 "title": entry.title,
@@ -134,7 +145,7 @@ def fetch_rss_feed(feed_key, feed_info):
                 "source_icon": feed_info["icon"],
                 "time_ago": pub_str,
                 "is_geo": is_geo,
-                "published_parsed": published
+                "pub_timestamp": pub_timestamp
             })
         
         news_cache[cache_key] = articles
@@ -152,16 +163,7 @@ def get_all_news():
         all_articles.extend(articles)
     
     # Sort by time (most recent first)
-    def sort_key(a):
-        p = a.get('published_parsed')
-        if p and hasattr(p, '__len__'):
-            try:
-                return time.mktime(p)
-            except Exception:
-                return 0
-        return 0
-    
-    all_articles.sort(key=sort_key, reverse=True)
+    all_articles.sort(key=lambda a: a.get('pub_timestamp', 0), reverse=True)
     return all_articles
 
 
@@ -322,4 +324,5 @@ def api_movers():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    debug = os.environ.get("FLASK_DEBUG", "true").lower() == "true"
+    app.run(host="0.0.0.0", port=port, debug=debug)

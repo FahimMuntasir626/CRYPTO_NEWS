@@ -2,8 +2,11 @@ services:
   - type: web
     name: cryptoradar
     runtime: python
+    plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --threads 2 --timeout 120
+    startCommand: gunicorn app:app --bind 0.0.0.0:10000 --workers 2 --threads 2 --timeout 120
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.0
+        value: "3.11.0"
+      - key: FLASK_DEBUG
+        value: "false"
