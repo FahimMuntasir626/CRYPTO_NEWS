@@ -19,6 +19,7 @@ news_cache = TTLCache(maxsize=20, ttl=300)         # 5 min
 trending_cache = TTLCache(maxsize=10, ttl=180)     # 3 min
 
 COINGECKO_BASE = "https://api.coingecko.com/api/v3"
+COINGECKO_API_KEY = os.environ.get("COINGECKO_API_KEY", "CG-VmRbyMAeoiRnYrE7FUM57ADm")
 
 # --- RSS Feed URLs ---
 RSS_FEEDS = {
@@ -191,8 +192,8 @@ def api_market():
             "sparkline": True,
             "price_change_percentage": "1h,24h,7d"
         }
-        headers = {"accept": "application/json"}
-        resp = requests.get(url, params=params, headers=headers, timeout=10)
+        headers = {"accept": "application/json", "x-cg-demo-api-key": COINGECKO_API_KEY}
+        resp = requests.get(url, params=params, headers=headers, timeout=15)
         resp.raise_for_status()
         data = resp.json()
         
@@ -231,8 +232,8 @@ def api_trending():
     
     try:
         url = f"{COINGECKO_BASE}/search/trending"
-        headers = {"accept": "application/json"}
-        resp = requests.get(url, headers=headers, timeout=10)
+        headers = {"accept": "application/json", "x-cg-demo-api-key": COINGECKO_API_KEY}
+        resp = requests.get(url, headers=headers, timeout=15)
         resp.raise_for_status()
         data = resp.json()
         
@@ -280,8 +281,8 @@ def api_global():
     
     try:
         url = f"{COINGECKO_BASE}/global"
-        headers = {"accept": "application/json"}
-        resp = requests.get(url, headers=headers, timeout=10)
+        headers = {"accept": "application/json", "x-cg-demo-api-key": COINGECKO_API_KEY}
+        resp = requests.get(url, headers=headers, timeout=15)
         resp.raise_for_status()
         data = resp.json().get("data", {})
         
